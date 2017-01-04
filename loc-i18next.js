@@ -117,20 +117,6 @@ var asyncGenerator = function () {
   };
 }();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 var _extends = Object.assign || function (target) {
   for (var i = 1; i < arguments.length; i++) {
     var source = arguments[i];
@@ -145,70 +131,7 @@ var _extends = Object.assign || function (target) {
   return target;
 };
 
-var get = function get(object, property, receiver) {
-  if (object === null) object = Function.prototype;
-  var desc = Object.getOwnPropertyDescriptor(object, property);
-
-  if (desc === undefined) {
-    var parent = Object.getPrototypeOf(object);
-
-    if (parent === null) {
-      return undefined;
-    } else {
-      return get(parent, property, receiver);
-    }
-  } else if ("value" in desc) {
-    return desc.value;
-  } else {
-    var getter = desc.get;
-
-    if (getter === undefined) {
-      return undefined;
-    }
-
-    return getter.call(receiver);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-var set = function set(object, property, value, receiver) {
-  var desc = Object.getOwnPropertyDescriptor(object, property);
-
-  if (desc === undefined) {
-    var parent = Object.getPrototypeOf(object);
-
-    if (parent !== null) {
-      set(parent, property, value, receiver);
-    }
-  } else if ("value" in desc && desc.writable) {
-    desc.value = value;
-  } else {
-    var setter = desc.set;
-
-    if (setter !== undefined) {
-      setter.call(receiver, value);
-    }
-  }
-
-  return value;
-};
-
-var defaults$$1 = {
+var defaults = {
     selectorAttr: 'data-i18n',
     targetAttr: 'i18n-target',
     optionsAttr: 'i18n-options',
@@ -219,7 +142,7 @@ var defaults$$1 = {
 function init(i18next) {
     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-    options = _extends({}, defaults$$1, options);
+    options = _extends({}, defaults, options);
     var extendDefault = function extendDefault(o, val) {
         return options.parseDefaultValueFromContent ? _extends({}, o, { defaultValue: val }) : o;
     };
@@ -252,6 +175,14 @@ function init(i18next) {
         } else {
             elem.setAttribute(attr, i18next.t(key, extendDefault(opts, elem.getAttribute(attr))));
         }
+    };
+
+    function relaxedJsonParse(badJSON) {
+        return JSON.parse(badJSON.replace(/:\s*"([^"]*)"/g, function (match, p1) {
+            return ': "' + p1.replace(/:/g, '@colon@') + '"';
+        }).replace(/:\s*'([^']*)'/g, function (match, p1) {
+            return ': "' + p1.replace(/:/g, '@colon@') + '"';
+        }).replace(/(['"])?([a-z0-9A-Z_]+)(['"])?\s*:/g, '"$2": ').replace(/@colon@/g, ':'));
     }
 
     function _loc(elem, opts) {
@@ -265,7 +196,7 @@ function init(i18next) {
 
         if (targetSelector != null) target = elem.querySelector(targetSelector) || elem;
 
-        if (!opts && options.useOptionsAttr === true) opts = elem.getAttribute(options.optionsAttr);
+        if (!opts && options.useOptionsAttr === true) opts = relaxedJsonParse(elem.getAttribute(options.optionsAttr) || '{}');
 
         opts = opts || {};
 
@@ -282,7 +213,7 @@ function init(i18next) {
             var clone = {};
             clone = _extends({ clone: clone }, opts);
             delete clone.lng;
-            elem.setAttribute(options.optionsAttr, clone);
+            elem.setAttribute(options.optionsAttr, JSON.stringify(clone));
         }
     }
 
@@ -296,7 +227,7 @@ function init(i18next) {
             }
             _loc(elem, opts);
         }
-    }
+    };
     return handle;
 }
 
